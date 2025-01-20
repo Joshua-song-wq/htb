@@ -1,0 +1,2 @@
+sudo nmap -sC -sV -vv -oA <path> <ip>
+sudo vi /etc/hosts: add <ip> <domain>
