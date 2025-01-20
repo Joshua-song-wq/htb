@@ -1,0 +1,3 @@
+start burp suite
+grep login request -> laravel session cookie
+registration & login
