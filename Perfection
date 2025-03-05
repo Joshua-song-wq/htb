@@ -1,0 +1,9 @@
+Go to website
+burpsuite capture weighted grade calculator
+all grade = 20 -> normal output
+grade1 = 1*20 -> malicious
+grade1 = asd{{7*7}} -> malicious
+Copy packet to a file
+ffuf -request <file> -request-proto http -w <special chars text> -fs 1619 -> +/& -> url encoding needed
+url encoding tool: cat <text file> | jq -Rr @uri
+ffuf -request <file> -request-proto http -w <(cat <special chars text> | jq -Rr @uri) -fs 1619
