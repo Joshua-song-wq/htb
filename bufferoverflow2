@@ -1,6 +1,8 @@
-# gdb <file>
-# pattern create -> put it -> pattern offset $eip -> get <offset>
-# disas <func> -> b *<specific bytes for breakpoint>
+# gdb <file> or gdb; file <file>; r;
+# pattern create -> put it -> pattern offset $eip -> get <offset> (gdb)
+# msf-pattern_create -l 1000; msf-pattern_offset -q <substring> (using msf)
+# info functions (gdb): show memory loc of functions
+# disas <func> (gdb) -> b *<specific bytes for breakpoint>
 # x $ebp+0x8: show bytes in ebp + 0x8 location
 #!/usr/bin/env python3
 
