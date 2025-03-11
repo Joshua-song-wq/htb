@@ -1,7 +1,7 @@
-sudo dmesg: get crash info
-readelf -s <filename>: show each variable and function addresses
-
-python socket connection example
+# sudo dmesg: get crash info
+# readelf -s <filename>: show each variable and function addresses
+# python3 -c 'import sys; sys.stdout.buffer.write(b"<payload>")' | ./<vuln file>: also can be used
+#python socket connection example
 
 #!/usr/bin/env python3
 import socket
