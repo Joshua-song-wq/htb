@@ -1,3 +1,8 @@
 # x64 canonical address: 0x0 ~ 0x00007FFFFFFFFFFF, 0xFFFF800000000000 ~ 0xFFFFFFFFFFFFFFFF
 # x32: buffer overflow -> saved return address as input
 # x64: buffer overflow -> rip must be in canonical address range
+# gdb: create pattern -> put it -> pattern offset $rsp -> get offset
+# payload example: b"A" * offset + b"B" * 6 -> rip in range and overwrite
+# payload: b"A" * offset + <function loc in little endian>
+# x64: struct.pack("<Q", <hex>)
+# disas <func>: if endbr64 is in function, use points after endbr64(it will terminate the function)
