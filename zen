@@ -1,0 +1,1 @@
+gobuster -k -u https://humongousretail.com -w /usr/share/wordlists/dirbuster/directory-list-2.3-small.txt -o <local> -t 30
