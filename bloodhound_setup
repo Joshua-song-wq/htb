@@ -1,0 +1,11 @@
+Bloodhound setup
+1. git clone https://github.com/SpecterOps/BloodHound.git
+2. cd to BloodHound/examples/docker-compose
+3. Run sudo docker-compose up --build -d
+4. sudo docker-compose logs bloodhound: find initial password set
+5. ID is at the end of bloodhound.config.json, email_address: spam@example.com
+6. Log in to localhost:8080 with ID & password from 4 & 5, set new password
+7. pipx install bloodhound-ce
+8. bloodhound-ce-python -u <id> -p <pass> -d <domain> -c all -ns <ip>
+9. Upload the files to administration page in step 6
+10. After use, sudo docker-compose down will turn it off
