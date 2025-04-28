@@ -1,0 +1,20 @@
+--local
+-compile agent and proxy
+go build -o agent cmd/agent/main.go -> agent on linux
+go build -o proxy cmd/proxy/main.go -> proxy on linux
+GOOS=windows go build -o agent.exe cmd/agent/main.go -> agent on windows
+GOOS=windows go build -o proxy.exe cmd/proxy/main.go -> proxy on windows
+
+-setup proxy
+sudo ip tuntap add user <my username> mode tun ligolo
+sudo ip link set ligolo up
+./proxy -selfcert
+
+--remote
+.\agent.exe --connect <my ip>:11601 -ignore-cert
+
+--shell
+session; -> select session you want
+iflist; -> show routing table
+autoroute; or interface_add_route --name ligolo --route <ip range>; -> add route 
+interface_route_del -> remove route
