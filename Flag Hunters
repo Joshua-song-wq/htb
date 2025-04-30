@@ -1,0 +1,24 @@
+lyric-reader.py:
+for line in song_lines[lip].split(';'):
+      if line == '' and song_lines[lip] != '':
+        continue
+      if line == 'REFRAIN':
+        song_lines[refrain_return] = 'RETURN ' + str(lip + 1)
+        lip = refrain
+      elif re.match(r"CROWD.*", line):
+        crowd = input('Crowd: ')
+        song_lines[lip] = 'Crowd: ' + crowd
+        lip += 1
+      elif re.match(r"RETURN [0-9]+", line):
+        lip = int(line.split()[1])
+      elif line == 'END':
+        finished = True
+      else:
+        print(line, flush=True)
+        time.sleep(0.5)
+        lip += 1
+
+CROWD: <userinput> will be changed and it will run this line one more time,
+and song_lines[lip] is splitted by ';', so put ;.
+Then, if it's RETURN [0-9]+, it will change the lip to that number,
+so input should be ;RETURN 0 -> get flag
