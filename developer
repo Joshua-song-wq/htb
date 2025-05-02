@@ -15,7 +15,11 @@ Forensic
   2.phished_list.xlsx -> unzip -> grep -iR sheetprotect . -> remove that tag and zip -r <newname.xlsx> . -> can unhide column and get flag
 Reversing
   1.readelf -s getlucky: see winner function -> gdb getlucky -> jump winner -> get flag
-  2. 
+  2.ghidra -> new project -> open authenticate, analyze -> filter main 
+-> find line: bVar1 = &A>::eq(&local_70,&local_50); -- compare variables to check if it's valid -> check last 3 hex
+-> b *<current location hex excluding last 3 hex><above line's last 3 hex> -> c -> put anything for password
+-> $rsi is the input and $rdi is the flag
+  3.
 
 Submit a walkthrough -> http://<my ip>/<whatever>
 sudo nc -nlvp 80 -> get callback
