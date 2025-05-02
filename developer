@@ -5,6 +5,7 @@ go to http://developer.htb/
 gobuster dir -u http://developer.htb/ -w /opt/SecLists/Discovery/Web-Content/raft-small-directories-lowercase.txt -> Find admin login page
 sign up, log in
 
+# If you solve one, then you can go on. You don't need to solve everything
 Forensic
   1.move the file to windows, dnspy open the file -> look for main
     main has long base64 encoded string -> base64 decode -> give encrypt function
@@ -12,6 +13,9 @@ Forensic
     -> $Passphrase = 'AmazinglyStrongPassword', $salt= 'CrazilySimpleSalt', $init= 'StupidlyEasy_IV'
     -> run the function; $encrypted = 'X/o8VJQE1pyQhjmpcwk45+L069bivpF63PjZP4z7ahKaC+jv89NT6ze0T5id0lWC'; $decrypted = Decrypt-String $encrypted; echo $decrypted
   2.phished_list.xlsx -> unzip -> grep -iR sheetprotect . -> remove that tag and zip -r <newname.xlsx> . -> can unhide column and get flag
+Reversing
+  1.readelf -s getlucky: see winner function -> gdb getlucky -> jump winner -> get flag
+  2. 
 
 Submit a walkthrough -> http://<my ip>/<whatever>
 sudo nc -nlvp 80 -> get callback
