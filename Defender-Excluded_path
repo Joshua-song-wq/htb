@@ -1,0 +1,1 @@
+Get-WinEvent -LogName "Microsoft-Windows-Windows Defender/Operational" -FilterXPath "*[System[EventId=5007]]" |Where-Object { $_Message -like "*exclusion*" }
